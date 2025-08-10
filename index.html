@@ -71,17 +71,16 @@
 
     // ⭐ 変更点: ラベル名と色をここで設定します
     const labelConfigs = [
-        { label: "背景ノイズ", color: "#6c757d" },
-        { label: "クラスA", color: "#28a745" },
-        { label: "クラスB", color: "#ffc107" },
-        { label: "クラスC", color: "#dc3545" }
+        { label: "BG", color: "#ffc107" },
+        { label: "COLD", color: "#000080" },
+        { label: "HOT", color: "#ff4500" },
     ];
 
     async function init() {
         const recognizer = await createModel();
         // Teachable Machineモデルの元のラベルを取得
-        const classLabels = recognizer.wordLabels(); 
-        const labelContainer = document.getElementById("label-container");
+        //const classLabels = recognizer.wordLabels(); 
+        //const labelContainer = document.getElementById("label-container");
 
         // ⭐ 変更点: labelConfigsの長さに基づいてループを実行
         for (let i = 0; i < labelConfigs.length; i++) {
