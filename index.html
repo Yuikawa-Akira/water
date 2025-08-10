@@ -30,7 +30,6 @@
         }
         .bar {
             height: 100%;
-            background-color: #4CAF50;
             border-radius: 5px;
             transition: width 0.2s ease-in-out;
             position: absolute;
@@ -70,19 +69,31 @@
         return recognizer;
     }
 
+    // ⭐ 変更点: ラベル名と色をここで設定します
+    const labelConfigs = [
+        { label: "BG", color: "#6c757d" },
+        { label: "COLD", color: "#28a745" },
+        { label: "HOT", color: "#ffc107" },
+        { label: "クラスC", color: "#dc3545" }
+    ];
+
     async function init() {
         const recognizer = await createModel();
-        const classLabels = recognizer.wordLabels();
+        // Teachable Machineモデルの元のラベルを取得
+        const classLabels = recognizer.wordLabels(); 
         const labelContainer = document.getElementById("label-container");
 
-        // Create initial divs for each label
-        for (let i = 0; i < classLabels.length; i++) {
+        // ⭐ 変更点: labelConfigsの長さに基づいてループを実行
+        for (let i = 0; i < labelConfigs.length; i++) {
             const row = document.createElement("div");
             row.className = "prediction-row";
+            // datasetに元のラベルを保存
+            row.dataset.originalLabel = classLabels[i];
 
             const labelText = document.createElement("div");
             labelText.className = "label-text";
-            labelText.innerText = classLabels[i];
+            // ⭐ 変更点: labelConfigsからラベル名を取得
+            labelText.innerText = labelConfigs[i].label; 
             row.appendChild(labelText);
 
             const barContainer = document.createElement("div");
@@ -90,6 +101,8 @@
             const bar = document.createElement("div");
             bar.className = "bar";
             bar.style.width = '0%';
+            // ⭐ 変更点: labelConfigsから色を取得して設定
+            bar.style.backgroundColor = labelConfigs[i].color; 
             barContainer.appendChild(bar);
             row.appendChild(barContainer);
             
@@ -103,27 +116,33 @@
 
         recognizer.listen(result => {
             const scores = result.scores;
-            // Create an array of objects to store labels and their scores
             const predictions = classLabels.map((label, index) => ({
                 label: label,
                 score: scores[index]
             }));
 
-            // Sort the predictions array in descending order based on the score
             predictions.sort((a, b) => b.score - a.score);
 
-            // Update the display based on the sorted array
+            // ⭐ 変更点: ソートされた結果を元の順序に戻して表示を更新
+            const sortedLabelConfigs = predictions.map(p => labelConfigs.find(lc => lc.label === p.label));
+            
+            // ⭐ 変更点: オリジナルのクラスラベルに対応するDOM要素を検索し、値を更新
             predictions.forEach((prediction, index) => {
-                const row = labelContainer.childNodes[index];
-                const labelText = row.querySelector('.label-text');
-                const bar = row.querySelector('.bar');
-                const scoreText = row.querySelector('.score-text');
+                const originalLabel = prediction.label;
+                const row = Array.from(labelContainer.childNodes).find(r => r.dataset.originalLabel === originalLabel);
+                
+                if (row) {
+                    const labelText = row.querySelector('.label-text');
+                    const bar = row.querySelector('.bar');
+                    const scoreText = row.querySelector('.score-text');
+                    
+                    const newLabel = labelConfigs.find(lc => lc.label === originalLabel)?.label || originalLabel;
 
-                // Update text and bar width
-                labelText.innerText = prediction.label;
-                const percentage = (prediction.score * 100).toFixed(2);
-                bar.style.width = percentage + '%';
-                scoreText.innerText = prediction.score.toFixed(2);
+                    labelText.innerText = newLabel;
+                    const percentage = (prediction.score * 100).toFixed(2);
+                    bar.style.width = percentage + '%';
+                    scoreText.innerText = prediction.score.toFixed(2);
+                }
             });
         }, {
             includeSpectrogram: true,
