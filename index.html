@@ -79,8 +79,8 @@
     async function init() {
         const recognizer = await createModel();
         // Teachable Machineモデルの元のラベルを取得
-        //const classLabels = recognizer.wordLabels(); 
-        //const labelContainer = document.getElementById("label-container");
+        const classLabels = recognizer.wordLabels(); 
+        const labelContainer = document.getElementById("label-container");
 
         // ⭐ 変更点: labelConfigsの長さに基づいてループを実行
         for (let i = 0; i < labelConfigs.length; i++) {
