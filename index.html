@@ -69,79 +69,66 @@
         return recognizer;
     }
 
-    // ⭐ 変更点: ラベル名と色をここで設定します
     const labelConfigs = [
-        { label: "BG", color: "#6c757d" },
-        { label: "COLD", color: "#28a745" },
-        { label: "HOT", color: "#ffc107" },
-        { label: "クラスC", color: "#dc3545" }
+        { original: "_background_noise_", display: "背景ノイズ", color: "#6c757d" },
+        { original: "Class A", display: "クラスA", color: "#28a745" },
+        { original: "Class B", display: "クラスB", color: "#ffc107" },
     ];
 
     async function init() {
         const recognizer = await createModel();
-        // Teachable Machineモデルの元のラベルを取得
         const classLabels = recognizer.wordLabels(); 
         const labelContainer = document.getElementById("label-container");
 
-        // ⭐ 変更点: labelConfigsの長さに基づいてループを実行
-        for (let i = 0; i < labelConfigs.length; i++) {
-            const row = document.createElement("div");
-            row.className = "prediction-row";
-            // datasetに元のラベルを保存
-            row.dataset.originalLabel = classLabels[i];
-
-            const labelText = document.createElement("div");
-            labelText.className = "label-text";
-            // ⭐ 変更点: labelConfigsからラベル名を取得
-            labelText.innerText = labelConfigs[i].label; 
-            row.appendChild(labelText);
-
-            const barContainer = document.createElement("div");
-            barContainer.className = "bar-container";
-            const bar = document.createElement("div");
-            bar.className = "bar";
-            bar.style.width = '0%';
-            // ⭐ 変更点: labelConfigsから色を取得して設定
-            bar.style.backgroundColor = labelConfigs[i].color; 
-            barContainer.appendChild(bar);
-            row.appendChild(barContainer);
-            
-            const scoreText = document.createElement("div");
-            scoreText.className = "score-text";
-            scoreText.innerText = "0.00";
-            row.appendChild(scoreText);
-
-            labelContainer.appendChild(row);
+        // 以前のDOM要素をクリア
+        while (labelContainer.firstChild) {
+            labelContainer.removeChild(labelContainer.firstChild);
         }
 
+        // ラベルごとにDOM要素を生成する代わりに、動的に更新
         recognizer.listen(result => {
             const scores = result.scores;
             const predictions = classLabels.map((label, index) => ({
-                label: label,
+                originalLabel: label,
                 score: scores[index]
             }));
 
+            // 予測結果を確率の高い順にソート
             predictions.sort((a, b) => b.score - a.score);
 
-            // ⭐ 変更点: ソートされた結果を元の順序に戻して表示を更新
-            const sortedLabelConfigs = predictions.map(p => labelConfigs.find(lc => lc.label === p.label));
-            
-            // ⭐ 変更点: オリジナルのクラスラベルに対応するDOM要素を検索し、値を更新
-            predictions.forEach((prediction, index) => {
-                const originalLabel = prediction.label;
-                const row = Array.from(labelContainer.childNodes).find(r => r.dataset.originalLabel === originalLabel);
-                
-                if (row) {
-                    const labelText = row.querySelector('.label-text');
-                    const bar = row.querySelector('.bar');
-                    const scoreText = row.querySelector('.score-text');
-                    
-                    const newLabel = labelConfigs.find(lc => lc.label === originalLabel)?.label || originalLabel;
+            // 以前のDOM要素をクリア
+            while (labelContainer.firstChild) {
+                labelContainer.removeChild(labelContainer.firstChild);
+            }
 
-                    labelText.innerText = newLabel;
+            // ソートされた順序で新しいDOM要素を生成・追加
+            predictions.forEach(prediction => {
+                const config = labelConfigs.find(c => c.original === prediction.originalLabel);
+                if (config) {
+                    const row = document.createElement("div");
+                    row.className = "prediction-row";
+                    
+                    const labelText = document.createElement("div");
+                    labelText.className = "label-text";
+                    labelText.innerText = config.display;
+                    row.appendChild(labelText);
+                    
+                    const barContainer = document.createElement("div");
+                    barContainer.className = "bar-container";
+                    const bar = document.createElement("div");
+                    bar.className = "bar";
+                    bar.style.backgroundColor = config.color;
                     const percentage = (prediction.score * 100).toFixed(2);
                     bar.style.width = percentage + '%';
+                    barContainer.appendChild(bar);
+                    row.appendChild(barContainer);
+                    
+                    const scoreText = document.createElement("div");
+                    scoreText.className = "score-text";
                     scoreText.innerText = prediction.score.toFixed(2);
+                    row.appendChild(scoreText);
+
+                    labelContainer.appendChild(row);
                 }
             });
         }, {
