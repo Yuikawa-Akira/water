@@ -30,7 +30,6 @@
         }
         .bar {
             height: 100%;
-            background-color: #4CAF50;
             border-radius: 5px;
             transition: width 0.2s ease-in-out;
             position: absolute;
@@ -72,17 +71,29 @@
 
     async function init() {
         const recognizer = await createModel();
-        const classLabels = recognizer.wordLabels();
+        const classLabels = recognizer.wordLabels(); // モデルからラベル数を取得するために残す
+
+        // 💡 ここからが変更箇所です
+        const customLabels = ["BG", "COLD", "HOT"];
+        const customColors = ["#cccccc", "#e0e0e0", "#4CAF50"];
+        // 💡 変更箇所はここまで
+
+        if (customLabels.length !== classLabels.length || customLabels.length !== customColors.length) {
+            console.error("ラベル、または色の設定がTeachable Machineのクラス数と一致しません。");
+            return;
+        }
+
         const labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = ''; // 既存の要素をクリア
 
         // Create initial divs for each label
-        for (let i = 0; i < classLabels.length; i++) {
+        for (let i = 0; i < customLabels.length; i++) {
             const row = document.createElement("div");
             row.className = "prediction-row";
 
             const labelText = document.createElement("div");
             labelText.className = "label-text";
-            labelText.innerText = classLabels[i];
+            labelText.innerText = customLabels[i];
             row.appendChild(labelText);
 
             const barContainer = document.createElement("div");
@@ -90,9 +101,11 @@
             const bar = document.createElement("div");
             bar.className = "bar";
             bar.style.width = '0%';
+            // 💡 ここでカスタムカラーを設定
+            bar.style.backgroundColor = customColors[i];
             barContainer.appendChild(bar);
             row.appendChild(barContainer);
-            
+
             const scoreText = document.createElement("div");
             scoreText.className = "score-text";
             scoreText.innerText = "0.00";
@@ -103,10 +116,11 @@
 
         recognizer.listen(result => {
             const scores = result.scores;
-            // Create an array of objects to store labels and their scores
-            const predictions = classLabels.map((label, index) => ({
-                label: label,
-                score: scores[index]
+            const predictions = classLabels.map((originalLabel, index) => ({
+                label: customLabels[index], // カスタムラベルを使用
+                color: customColors[index], // カスタムカラーを使用
+                score: scores[index],
+                originalIndex: index // ソート後に元のインデックスを保持
             }));
 
             // Sort the predictions array in descending order based on the score
@@ -119,11 +133,12 @@
                 const bar = row.querySelector('.bar');
                 const scoreText = row.querySelector('.score-text');
 
-                // Update text and bar width
                 labelText.innerText = prediction.label;
                 const percentage = (prediction.score * 100).toFixed(2);
                 bar.style.width = percentage + '%';
                 scoreText.innerText = prediction.score.toFixed(2);
+                // 💡 ソート後も正しい色を再設定
+                bar.style.backgroundColor = prediction.color;
             });
         }, {
             includeSpectrogram: true,
