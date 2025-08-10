@@ -74,8 +74,8 @@
         const classLabels = recognizer.wordLabels(); // モデルからラベル数を取得するために残す
 
         // 💡 ここからが変更箇所です
-        const customLabels = ["HOT", "COLD", "BG"];
-        const customColors = ["#ff4500", "#000080", "#e0e0e0"];
+        const customLabels = ["COLD", "HOT", "BG"];
+        const customColors = ["#000080", "#ff4500", "#000000"];
         // 💡 変更箇所はここまで
 
         if (customLabels.length !== classLabels.length || customLabels.length !== customColors.length) {
